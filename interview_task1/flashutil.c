@@ -50,7 +50,7 @@ static inline ErrorCode_t FlashUtil_GetOpCode()
     if (ERROR == code) {
         if (NULL != flash_config.error_handler) {
             flash_config.error_handler();
-            /* noreturn */
+            /* noreturn in case error handler does not return */
         } else {
             flash_config.corrupted = true;
         }
@@ -59,7 +59,7 @@ static inline ErrorCode_t FlashUtil_GetOpCode()
 }
 
 /* Helper function to perform N consecutive flash writes to respective pages */
-static ErrorCode_t FlashUtil_PerformTransfer(const FlashUtilTransfer* transfer)
+static ErrorCode_t FlashUtil_PerformTransfer(const FlashUtil_Transfer* transfer)
 {
     if (!transfer->size) {
         return INVALID_ARGS;
@@ -95,11 +95,12 @@ static ErrorCode_t FlashUtil_PerformTransfer(const FlashUtilTransfer* transfer)
 
 /**** API functions ****/
 
-ErrorCode_t FlashUtil_Initialize(void)
+ErrorCode_t FlashUtil_Initialize(FlashUtil_FatalErrorHandler error_handler)
 {
     if (flash_config.initialized && !flash_config.corrupted) {
         return SUCCESS;
     }
+    flash_config.error_handler = error_handler;
 
     flash_config.driver_operation_completed = false;
     FlashDriver_Init(&FlashUtil_OperationCallback);
@@ -110,7 +111,7 @@ ErrorCode_t FlashUtil_Initialize(void)
     return code;
 }
 
-ErrorCode_t FlashUtil_Write(const FlashUtilTransfer* transfer)
+ErrorCode_t FlashUtil_Write(const FlashUtil_Transfer* transfer)
 {
     if (!flash_config.initialized) {
         /* Let's assume uninitialized flash subsystem results in INVALID_ARGS error */
